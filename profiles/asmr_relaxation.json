@@ -1,0 +1,61 @@
+{
+  "id": "asmr-relaxation-builtin",
+  "name": "ASMR Relaxation",
+  "category": "ASMR",
+  "description": "Smooth, intimate tuning for whispers, soft speech, and salon personal attention videos. Smooths sibilance to prevent listening fatigue.",
+  "icon": "🌙",
+  "target_device": "PRO X SE Gaming Headset",
+  "preamp_db": -1.80,
+  "filters": [
+    {
+      "type": "HP",
+      "freq": 28.0,
+      "gain": 0.0,
+      "q": 0.707,
+      "enabled": true,
+      "comment": "Subsonic high-pass to remove mic thumps & plosives"
+    },
+    {
+      "type": "PK",
+      "freq": 190.0,
+      "gain": 1.6,
+      "q": 1.2,
+      "enabled": true,
+      "comment": "Intimate vocal chest resonance & warmth"
+    },
+    {
+      "type": "PK",
+      "freq": 2800.0,
+      "gain": 1.2,
+      "q": 1.5,
+      "enabled": true,
+      "comment": "Close-up whispering presence & clarity"
+    },
+    {
+      "type": "PK",
+      "freq": 6400.0,
+      "gain": -2.2,
+      "q": 2.2,
+      "enabled": true,
+      "comment": "Anti-sibilance cut for harsh 's' and 'sh' sounds"
+    },
+    {
+      "type": "HS",
+      "freq": 9500.0,
+      "gain": -2.5,
+      "q": 0.707,
+      "enabled": true,
+      "comment": "Gentle top-end smoothing for zero-fatigue relaxation"
+    }
+  ],
+  "spatial": {
+    "crossfeed_enabled": false,
+    "crossfeed_cutoff_hz": 700.0,
+    "crossfeed_feed_db": -6.0,
+    "hf_smoothing_enabled": false,
+    "hf_smoothing_cutoff": 8500.0
+  },
+  "is_experimental": true,
+  "is_builtin": true,
+  "notes": "Experimental starting profile based on general audio heuristics (subsonic HP, vocal warmth, sibilance cut) and subjective listening. Not derived from physical acoustic measurements of the PRO X SE."
+}

@@ -1,0 +1,61 @@
+{
+  "id": "asmr-detail-builtin",
+  "name": "ASMR Detail",
+  "category": "ASMR",
+  "description": "Tactile clarity for tapping, scratching, brushes, scissors, pencil, and paper without excessive high-frequency brightness.",
+  "icon": "🔬",
+  "target_device": "PRO X SE Gaming Headset",
+  "preamp_db": -2.20,
+  "filters": [
+    {
+      "type": "HP",
+      "freq": 25.0,
+      "gain": 0.0,
+      "q": 0.707,
+      "enabled": true,
+      "comment": "Subsonic cleanup"
+    },
+    {
+      "type": "PK",
+      "freq": 320.0,
+      "gain": -1.0,
+      "q": 1.4,
+      "enabled": true,
+      "comment": "Reduce mid-bass boxiness to reveal micro-details"
+    },
+    {
+      "type": "PK",
+      "freq": 3800.0,
+      "gain": 2.0,
+      "q": 1.8,
+      "enabled": true,
+      "comment": "Tactile transient attack for tapping and scissor snips"
+    },
+    {
+      "type": "PK",
+      "freq": 7500.0,
+      "gain": 1.5,
+      "q": 2.0,
+      "enabled": true,
+      "comment": "Delicate friction texture for pencil, fabric, and brushes"
+    },
+    {
+      "type": "HS",
+      "freq": 14000.0,
+      "gain": -1.0,
+      "q": 0.707,
+      "enabled": true,
+      "comment": "Prevent ultra-high hiss accumulation"
+    }
+  ],
+  "spatial": {
+    "crossfeed_enabled": false,
+    "crossfeed_cutoff_hz": 700.0,
+    "crossfeed_feed_db": -6.0,
+    "hf_smoothing_enabled": false,
+    "hf_smoothing_cutoff": 9000.0
+  },
+  "is_experimental": true,
+  "is_builtin": true,
+  "notes": "Experimental starting profile based on general audio heuristics (subsonic clean-up, boxiness reduction, high-shelf rolloff) and subjective listening. Not derived from physical acoustic measurements of the PRO X SE."
+}

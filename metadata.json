@@ -1,0 +1,6 @@
+{
+  "name": "ASMR-DSP",
+  "description": "Local Windows Headphone EQ & Profile Manager for Logitech G PRO X SE with Equalizer APO and Dolby Atmos support",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

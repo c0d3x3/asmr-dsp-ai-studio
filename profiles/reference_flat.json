@@ -1,0 +1,20 @@
+{
+  "id": "reference-flat-builtin",
+  "name": "Reference / Flat",
+  "category": "Reference",
+  "description": "Zero processing baseline. Used as the control standard for immediate A/B subjective comparisons.",
+  "icon": "🎧",
+  "target_device": "PRO X SE Gaming Headset",
+  "preamp_db": 0.0,
+  "filters": [],
+  "spatial": {
+    "crossfeed_enabled": false,
+    "crossfeed_cutoff_hz": 700.0,
+    "crossfeed_feed_db": -6.0,
+    "hf_smoothing_enabled": false,
+    "hf_smoothing_cutoff": 8500.0
+  },
+  "is_experimental": false,
+  "is_builtin": true,
+  "notes": "Uncolored reference baseline with zero EQ filters applied."
+}

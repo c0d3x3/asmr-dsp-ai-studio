@@ -1,0 +1,61 @@
+{
+  "id": "salon-haircut-builtin",
+  "name": "Salon / Haircut",
+  "category": "ASMR",
+  "description": "Optimized specifically for scissors, clippers, combs, brushes, hair sounds, and close binaural movement.",
+  "icon": "✂️",
+  "target_device": "PRO X SE Gaming Headset",
+  "preamp_db": -2.40,
+  "filters": [
+    {
+      "type": "HP",
+      "freq": 30.0,
+      "gain": 0.0,
+      "q": 0.707,
+      "enabled": true,
+      "comment": "Subsonic cut"
+    },
+    {
+      "type": "PK",
+      "freq": 220.0,
+      "gain": 1.0,
+      "q": 1.3,
+      "enabled": true,
+      "comment": "Soft vocal warmth"
+    },
+    {
+      "type": "PK",
+      "freq": 4500.0,
+      "gain": 2.2,
+      "q": 2.0,
+      "enabled": true,
+      "comment": "Metallic scissor snip & comb tooth definition"
+    },
+    {
+      "type": "PK",
+      "freq": 7000.0,
+      "gain": -1.8,
+      "q": 2.8,
+      "enabled": true,
+      "comment": "Tame sharp scissor resonances"
+    },
+    {
+      "type": "PK",
+      "freq": 10500.0,
+      "gain": 1.0,
+      "q": 1.5,
+      "enabled": true,
+      "comment": "Hair strand friction and cape rustle"
+    }
+  ],
+  "spatial": {
+    "crossfeed_enabled": false,
+    "crossfeed_cutoff_hz": 700.0,
+    "crossfeed_feed_db": -6.0,
+    "hf_smoothing_enabled": false,
+    "hf_smoothing_cutoff": 8500.0
+  },
+  "is_experimental": true,
+  "is_builtin": true,
+  "notes": "Experimental profile tailored for haircut and salon roleplays."
+}

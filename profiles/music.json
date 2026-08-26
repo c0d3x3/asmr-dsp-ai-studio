@@ -1,0 +1,53 @@
+{
+  "id": "music-builtin",
+  "name": "Music",
+  "category": "Music",
+  "description": "Balanced, musical audiophile profile with natural vocal timbre and controlled bass extension.",
+  "icon": "🎵",
+  "target_device": "PRO X SE Gaming Headset",
+  "preamp_db": -2.00,
+  "filters": [
+    {
+      "type": "LS",
+      "freq": 85.0,
+      "gain": 1.5,
+      "q": 0.707,
+      "enabled": true,
+      "comment": "Sub-bass extension & warmth"
+    },
+    {
+      "type": "PK",
+      "freq": 250.0,
+      "gain": -0.8,
+      "q": 1.2,
+      "enabled": true,
+      "comment": "Clean up lower mid muddy frequencies"
+    },
+    {
+      "type": "PK",
+      "freq": 3200.0,
+      "gain": 1.8,
+      "q": 1.4,
+      "enabled": true,
+      "comment": "Vocal pinna presence boost"
+    },
+    {
+      "type": "HS",
+      "freq": 10000.0,
+      "gain": 1.0,
+      "q": 0.707,
+      "enabled": true,
+      "comment": "Cymbal shimmer and upper air"
+    }
+  ],
+  "spatial": {
+    "crossfeed_enabled": false,
+    "crossfeed_cutoff_hz": 700.0,
+    "crossfeed_feed_db": -6.0,
+    "hf_smoothing_enabled": false,
+    "hf_smoothing_cutoff": 8500.0
+  },
+  "is_experimental": false,
+  "is_builtin": true,
+  "notes": "General-purpose musical listening profile."
+}
