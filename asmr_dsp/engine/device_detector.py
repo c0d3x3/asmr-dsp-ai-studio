@@ -14,6 +14,67 @@ import logging
 logger = logging.getLogger("ASMR-DSP.DeviceDetector")
 
 
+def parse_device_state(dev_state: Any) -> str:
+    """
+    Safely parse Pycaw AudioDeviceState (Enum, IntEnum, int, or string) into a standardized state string.
+    Returns 'Active', 'Disabled', or 'Unplugged'.
+    """
+    if dev_state is None:
+        return "Unplugged"
+
+    # 1. Try pycaw AudioDeviceState Enum comparison if available
+    try:
+        from pycaw.constants import AudioDeviceState
+    except ImportError:
+        try:
+            from pycaw.pycaw import AudioDeviceState
+        except ImportError:
+            AudioDeviceState = None
+
+    if AudioDeviceState is not None:
+        try:
+            if dev_state == AudioDeviceState.Active:
+                return "Active"
+            elif dev_state == AudioDeviceState.Disabled:
+                return "Disabled"
+            elif dev_state in (AudioDeviceState.Unplugged, AudioDeviceState.NotPresent):
+                return "Unplugged"
+        except Exception:
+            pass
+
+    # 2. Check enum attribute name (e.g. dev_state.name == "Active")
+    name = getattr(dev_state, "name", None)
+    if isinstance(name, str):
+        name_lower = name.lower()
+        if name_lower == "active":
+            return "Active"
+        elif name_lower == "disabled":
+            return "Disabled"
+        elif name_lower in ("unplugged", "notpresent", "not_present"):
+            return "Unplugged"
+
+    # 3. Check underlying integer value or raw integer (DEVICE_STATE_* flags)
+    val = getattr(dev_state, "value", dev_state)
+    if isinstance(val, int):
+        if val == 1:  # DEVICE_STATE_ACTIVE
+            return "Active"
+        elif val == 2:  # DEVICE_STATE_DISABLED
+            return "Disabled"
+        elif val in (4, 8):  # DEVICE_STATE_NOTPRESENT, DEVICE_STATE_UNPLUGGED
+            return "Unplugged"
+
+    # 4. String inspection fallback
+    str_val = str(dev_state).lower()
+    if "active" in str_val:
+        return "Active"
+    elif "disabled" in str_val:
+        return "Disabled"
+    elif "unplugged" in str_val or "notpresent" in str_val:
+        return "Unplugged"
+
+    return "Unplugged"
+
+
 @dataclass
 class AudioEndpoint:
     name: str
@@ -109,9 +170,8 @@ class DeviceDetector:
 
             devices = AudioUtilities.GetAllDevices()
             for dev in devices:
-                dev_state = getattr(dev, "state", 1)
-                # 1 = Active, 2 = Disabled, 4 = Not Present, 8 = Unplugged
-                state_str = "Active" if dev_state == 1 else ("Disabled" if dev_state == 2 else "Unplugged")
+                dev_state = getattr(dev, "state", None)
+                state_str = parse_device_state(dev_state)
                 
                 dev_name = str(getattr(dev, "FriendlyName", "Unknown Audio Device"))
                 dev_id = str(getattr(dev, "id", dev_name))
@@ -147,10 +207,27 @@ class DeviceDetector:
         return None
 
     def get_endpoint_by_name(self, name: str) -> Optional[AudioEndpoint]:
-        """Look up an endpoint by friendly name."""
-        for d in self.enumerate_endpoints():
-            if d.name.lower() == name.lower():
+        """
+        Look up an endpoint by friendly name.
+        Prefers exact case-insensitive match, then falls back to bidirectional substring match
+        to handle Windows endpoint prefixing (e.g. 'Speakers (PRO X SE Gaming Headset)').
+        """
+        if not name:
+            return None
+        target = name.strip().lower()
+        devices = self.enumerate_endpoints()
+
+        # 1. Exact case-insensitive match
+        for d in devices:
+            if d.name.lower() == target:
                 return d
+
+        # 2. Substring / containment match (e.g. 'PRO X SE Gaming Headset' in 'Speakers (PRO X SE Gaming Headset)')
+        for d in devices:
+            d_name = d.name.lower()
+            if target in d_name or d_name in target:
+                return d
+
         return None
 
     def find_preferred_device(self, preferred_id_or_name: Optional[str] = None) -> AudioEndpoint:
@@ -167,13 +244,24 @@ class DeviceDetector:
             )
 
         if preferred_id_or_name:
+            # 1. Exact stable GUID / ID match
             for d in devices:
-                if d.id == preferred_id_or_name or d.name.lower() == preferred_id_or_name.lower():
+                if d.id == preferred_id_or_name:
+                    return d
+            # 2. Exact case-insensitive friendly name match
+            for d in devices:
+                if d.name.lower() == preferred_id_or_name.lower():
+                    return d
+            # 3. Substring / containment match
+            for d in devices:
+                if preferred_id_or_name.lower() in d.name.lower() or d.name.lower() in preferred_id_or_name.lower():
                     return d
 
+        # Fallback to Logitech PRO X SE if present
         for d in devices:
             if d.is_logitech_pro_x:
                 return d
+        # Fallback to default
         for d in devices:
             if d.is_default:
                 return d
