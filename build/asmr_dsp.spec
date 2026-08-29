@@ -1,6 +1,4 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller Spec for ASMR-DSP Windows 11 Build
-
 import os
 import sys
 
@@ -26,18 +24,23 @@ a = Analysis(
     binaries=[],
     datas=added_files,
     hiddenimports=[
+        "PySide6",
         "PySide6.QtCore",
         "PySide6.QtGui",
         "PySide6.QtWidgets",
         "pycaw",
         "pycaw.pycaw",
+        "pycaw.constants",
         "comtypes",
-        "keyboard",
+        "logging",
+        "json",
+        "math",
+        "tempfile",
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["tkinter", "matplotlib", "scipy", "notebook"],
+    excludes=["tkinter", "matplotlib", "scipy", "numpy"],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -56,13 +59,12 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,  # Windowed GUI application
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # icon=os.path.join(base_dir, "assets", "icon.ico"),
 )
 
 coll = COLLECT(

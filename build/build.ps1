@@ -5,43 +5,55 @@ Write-Host "==================================================================="
 Write-Host "  ASMR-DSP Windows 11 PowerShell Build Script" -ForegroundColor Cyan
 Write-Host "===================================================================" -ForegroundColor Cyan
 
-# Check Python
+# 1. Check Python
 try {
-    $pyVer = python --version 2>&1
-    Write-Host "[OK] Detected: $pyVer" -ForegroundColor Green
+    $pythonVersion = python --version
+    Write-Host "[OK] Detected: $pythonVersion" -ForegroundColor Green
 } catch {
-    Write-Error "Python is not found in PATH. Please run in Anaconda or activate Python."
+    Write-Error "Python is not installed or not in PATH."
     exit 1
 }
 
-Write-Host "[1/4] Installing Python requirements..." -ForegroundColor Yellow
-pip install -r requirements.txt
+# 2. Requirements
+Write-Host "`n[1/4] Installing Python requirements..." -ForegroundColor Yellow
+python -m pip install -r requirements.txt --quiet
 
-Write-Host "[2/4] Executing test suite..." -ForegroundColor Yellow
+# 3. Tests
+Write-Host "`n[2/4] Running automated tests..." -ForegroundColor Yellow
 python tests/run_tests.py
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Automated test suite failed! Stopping build."
+    Write-Error "Automated unit tests failed! Aborting build."
     exit 1
 }
 
-Write-Host "[3/4] Compiling standalone executable via PyInstaller..." -ForegroundColor Yellow
-pyinstaller --noconfirm --log-level=WARN build/asmr_dsp.spec
-
-if (Test-Path "dist\ASMR-DSP\ASMR-DSP.exe") {
-    Write-Host "[OK] Standalone executable generated at: dist\ASMR-DSP\ASMR-DSP.exe" -ForegroundColor Green
-} else {
+# 4. PyInstaller
+Write-Host "`n[3/4] Building standalone executable with PyInstaller..." -ForegroundColor Yellow
+pyinstaller --clean --noconfirm build/asmr_dsp.spec
+if ($LASTEXITCODE -ne 0) {
     Write-Error "PyInstaller build failed."
     exit 1
 }
+Write-Host "[OK] Standalone build ready at dist\ASMR-DSP\ASMR-DSP.exe" -ForegroundColor Green
 
-# Inno Setup check
-$isccPath = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-if (Test-Path $isccPath) {
-    Write-Host "[4/4] Generating Inno Setup Windows Installer..." -ForegroundColor Yellow
-    & $isccPath "build\installer.iss"
-    Write-Host "[SUCCESS] Installer created: dist\ASMR-DSP-Setup.exe" -ForegroundColor Green
+# 5. Inno Setup
+Write-Host "`n[4/4] Checking for Inno Setup 6..." -ForegroundColor Yellow
+$isccPaths = @(
+    "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+    "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+)
+
+$iscc = $isccPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+if ($iscc) {
+    Write-Host "Compiling installer using $iscc..." -ForegroundColor Cyan
+    & $iscc build\installer.iss
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "[OK] Setup installer generated at dist\ASMR-DSP-Setup.exe" -ForegroundColor Green
+    }
 } else {
-    Write-Host "[INFO] Inno Setup 6 not detected. Distributable folder: dist\ASMR-DSP\" -ForegroundColor Cyan
+    Write-Host "[INFO] Inno Setup 6 not found. Standalone files ready in dist\ASMR-DSP\" -ForegroundColor Gray
 }
 
-Write-Host "Build process completed successfully!" -ForegroundColor Green
+Write-Host "`n===================================================================" -ForegroundColor Cyan
+Write-Host "  Build Process Finished!" -ForegroundColor Cyan
+Write-Host "===================================================================" -ForegroundColor Cyan

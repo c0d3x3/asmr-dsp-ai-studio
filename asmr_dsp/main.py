@@ -133,8 +133,10 @@ def run_cli_profile_switch(profile_name_or_id: str, endpoint_name: Optional[str]
         print(f"Error: Profile '{profile_name_or_id}' not found.")
         sys.exit(1)
 
+    detector = DeviceDetector()
+    pref_endpoint = detector.find_preferred_device(endpoint_name) if endpoint_name else None
     writer = APOWriter()
-    success, msg = writer.write_profile(target, device_name_override=endpoint_name)
+    success, msg = writer.write_profile(target, device_target=pref_endpoint or endpoint_name)
     print(f"Status: {'SUCCESS' if success else 'FAILED'}")
     print(msg)
 
@@ -177,8 +179,8 @@ def main():
     if args.test_eq:
         pref = detector.find_preferred_device(args.device or settings.settings.get("selected_endpoint_id"))
         writer = APOWriter()
-        _, test_profile = writer.generate_test_tone_config(pref.name)
-        success, msg = writer.write_profile(test_profile)
+        _, test_profile = writer.generate_test_tone_config(pref)
+        success, msg = writer.write_profile(test_profile, device_target=pref)
         print(f"Test EQ Active for {pref.name}: {msg}")
         return
 
@@ -302,13 +304,13 @@ def main():
             def select_profile(self, p: DSPProfile):
                 self.active_profile = p
                 self.lbl_status.setText(f"Active Profile:\n{p.name}")
-                success, msg = writer.write_profile(p, device_name_override=self.selected_endpoint.name)
+                success, msg = writer.write_profile(p, device_target=self.selected_endpoint)
                 if not success:
                     QMessageBox.warning(self, "Equalizer APO Status", msg)
 
             def run_test_eq(self):
-                _, test_prof = writer.generate_test_tone_config(self.selected_endpoint.name)
-                writer.write_profile(test_prof, device_name_override=self.selected_endpoint.name)
+                _, test_prof = writer.generate_test_tone_config(self.selected_endpoint)
+                writer.write_profile(test_prof, device_target=self.selected_endpoint)
                 self.lbl_status.setText("ACTIVE TEST:\n+4dB @ 1kHz")
                 QTimer.singleShot(3000, lambda: self.select_profile(self.active_profile))
 

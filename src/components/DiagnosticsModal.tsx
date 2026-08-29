@@ -114,7 +114,7 @@ export const DiagnosticsModal: React.FC<DiagnosticsModalProps> = ({
             </div>
 
             <div className="space-y-1.5 font-mono text-[11px] bg-[#0a0a0c] p-3 rounded-lg border border-white/5 text-slate-300">
-              <div>• Active Target: Device: &quot;{device.name}&quot;</div>
+              <div>• Active Target: Device: {device.name} {device.id}</div>
               <div>• Active Profile: {activeProfile.name} ({activeProfile.filters.length} filters)</div>
               <div>• Digital Preamp: {activeProfile.preampDb.toFixed(2)} dB</div>
               <div>• Config Path: C:\Program Files\EqualizerAPO\config\config.txt</div>

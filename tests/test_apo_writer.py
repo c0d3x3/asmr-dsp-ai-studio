@@ -4,6 +4,7 @@ import os
 import tempfile
 from asmr_dsp.models.profile import DSPProfile, EQFilter, FilterType
 from asmr_dsp.engine.apo_writer import APOWriter
+from asmr_dsp.engine.device_detector import AudioEndpoint
 
 
 class TestAPOWriter(unittest.TestCase):
@@ -22,11 +23,73 @@ class TestAPOWriter(unittest.TestCase):
         writer = APOWriter()
         text = writer.format_profile_to_apo_text(p)
 
-        self.assertIn('Device: "PRO X SE Gaming Headset"', text)
+        # Equalizer APO Device syntax must NEVER include surrounding double quotes
+        self.assertIn("Device: PRO X SE Gaming Headset", text)
+        self.assertNotIn('Device: "', text)
         self.assertIn('Preamp: -2.50 dB', text)
         self.assertIn('Filter 1: ON HP Fc 30.0 Hz # Sub HP', text)
         self.assertIn('Filter 2: ON PK Fc 2800.0 Hz Gain +1.50 dB Q 1.414 # Speech Intelligibility', text)
         self.assertIn('Filter 3: ON HSC Fc 8500.0 Hz Gain -2.00 dB Q 0.707 # Gentle Highs', text)
+
+    def test_pro_x_se_endpoint_device_directive(self):
+        """
+        Verify that targeting the PRO X SE endpoint (name + GUID) produces
+        the exact unquoted Device directive matching Windows MMDevice and Equalizer APO.
+        """
+        pro_x_endpoint = AudioEndpoint(
+            name="Speakers (PRO X SE Gaming Headset)",
+            id="{0.0.0.00000000}.{d79b45b7-b5cd-4b44-b015-872001a114e3}",
+            provider="(Generic USB Audio)"
+        )
+        writer = APOWriter()
+        p = DSPProfile(name="ASMR Pro", preamp_db=-2.0)
+        text = writer.format_profile_to_apo_text(p, device_target=pro_x_endpoint)
+
+        # Verify exact target directive
+        expected_directive = "Device: Speakers (PRO X SE Gaming Headset) {0.0.0.00000000}.{d79b45b7-b5cd-4b44-b015-872001a114e3}"
+        self.assertIn(expected_directive, text)
+        # Ensure no quotes around the directive
+        self.assertNotIn(f'Device: "{pro_x_endpoint.name}"', text)
+        self.assertNotIn(f'"{expected_directive}"', text)
+        self.assertNotIn('Device: "', text)
+
+    def test_device_directive_helper_variants(self):
+        """Verify format_device_directive handles all device input combinations cleanly."""
+        # 1. AudioEndpoint instance
+        ep = AudioEndpoint(name="Speakers (PRO X SE Gaming Headset)", id="{0.0.0.00000000}.{d79b45b7-b5cd-4b44-b015-872001a114e3}")
+        self.assertEqual(
+            APOWriter.format_device_directive(ep),
+            "Device: Speakers (PRO X SE Gaming Headset) {0.0.0.00000000}.{d79b45b7-b5cd-4b44-b015-872001a114e3}"
+        )
+
+        # 2. Name + separate device_id parameter
+        self.assertEqual(
+            APOWriter.format_device_directive("Speakers (PRO X SE Gaming Headset)", "{0.0.0.00000000}.{d79b45b7-b5cd-4b44-b015-872001a114e3}"),
+            "Device: Speakers (PRO X SE Gaming Headset) {0.0.0.00000000}.{d79b45b7-b5cd-4b44-b015-872001a114e3}"
+        )
+
+        # 3. Accidental quotes stripped
+        self.assertEqual(
+            APOWriter.format_device_directive('"Speakers (PRO X SE Gaming Headset)"', '"{0.0.0.00000000}.{d79b45b7-b5cd-4b44-b015-872001a114e3}"'),
+            "Device: Speakers (PRO X SE Gaming Headset) {0.0.0.00000000}.{d79b45b7-b5cd-4b44-b015-872001a114e3}"
+        )
+
+        # 4. GUID string only
+        self.assertEqual(
+            APOWriter.format_device_directive("{0.0.0.00000000}.{d79b45b7-b5cd-4b44-b015-872001a114e3}"),
+            "Device: {0.0.0.00000000}.{d79b45b7-b5cd-4b44-b015-872001a114e3}"
+        )
+
+        # 5. Friendly name only
+        self.assertEqual(
+            APOWriter.format_device_directive("PRO X SE Gaming Headset"),
+            "Device: PRO X SE Gaming Headset"
+        )
+
+        # 6. 'all devices' or empty returns empty string
+        self.assertEqual(APOWriter.format_device_directive("all devices"), "")
+        self.assertEqual(APOWriter.format_device_directive(""), "")
+        self.assertEqual(APOWriter.format_device_directive(None), "")
 
     def test_atomic_file_write(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -46,3 +109,4 @@ class TestAPOWriter(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

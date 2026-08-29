@@ -178,8 +178,9 @@ export function generateAPOConfigText(profile: DSPProfile, deviceOverride?: stri
     '',
   ];
 
-  if (device.toLowerCase() !== 'all devices') {
-    lines.push(`Device: "${device}"`);
+  const cleanDevice = device.replace(/["']/g, '').trim();
+  if (cleanDevice.toLowerCase() !== 'all devices' && cleanDevice !== '') {
+    lines.push(`Device: ${cleanDevice}`);
     lines.push('');
   }
 

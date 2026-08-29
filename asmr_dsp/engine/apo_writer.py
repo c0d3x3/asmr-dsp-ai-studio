@@ -109,29 +109,105 @@ class APOWriter:
             return "BP"
         return "PK"
 
-    def format_profile_to_apo_text(self, profile: DSPProfile, device_name_override: Optional[str] = None) -> str:
+    @classmethod
+    def format_device_directive(
+        cls,
+        device_target: Optional[Any] = None,
+        device_id: Optional[str] = None
+    ) -> str:
+        """
+        Format Equalizer APO Device: directive.
+
+        Equalizer APO syntax rules:
+        - NEVER wrap device names or GUIDs in double quotes. Quotes are matched literally
+          by Equalizer APO and cause 'No device matches' errors in Configuration Editor.
+        - When an endpoint GUID / ID is available (e.g. '{0.0.0.00000000}.{d79b45b7-b5cd-4b44-b015-872001a114e3}'),
+          including it allows Equalizer APO to match the exact hardware endpoint regardless
+          of Windows friendly name prefixing or localization changes.
+        - Format: Device: <Friendly Name> <Endpoint GUID>
+          or:     Device: <Endpoint GUID>
+          or:     Device: <Friendly Name>
+        - If target is None, empty, or 'all devices', returns empty string (no Device filter line).
+        """
+        if device_target is None and device_id is None:
+            return ""
+
+        name_str = ""
+        id_str = ""
+
+        # Check if device_target is an AudioEndpoint object
+        if hasattr(device_target, "name") and hasattr(device_target, "id"):
+            name_str = str(device_target.name).strip('"\' \t\r\n')
+            id_str = str(device_target.id).strip('"\' \t\r\n')
+        elif isinstance(device_target, str):
+            clean_str = device_target.strip('"\' \t\r\n')
+            if clean_str.lower() in ("all devices", "all", "*", ""):
+                return ""
+            # If the string contains a GUID
+            if "{" in clean_str and "}" in clean_str:
+                id_str = clean_str
+            else:
+                name_str = clean_str
+
+        if device_id:
+            clean_id = str(device_id).strip('"\' \t\r\n')
+            if clean_id:
+                id_str = clean_id
+
+        # Combine name and GUID safely without quotes
+        if name_str and id_str:
+            if id_str in name_str:
+                return f"Device: {name_str}"
+            return f"Device: {name_str} {id_str}"
+        elif id_str:
+            return f"Device: {id_str}"
+        elif name_str:
+            return f"Device: {name_str}"
+
+        return ""
+
+    def format_profile_to_apo_text(
+        self,
+        profile: DSPProfile,
+        device_target: Optional[Any] = None,
+        device_id: Optional[str] = None,
+        device_name_override: Optional[str] = None
+    ) -> str:
         """
         Generate strict, clean Equalizer APO configuration text.
         Includes device filter block, safe preamp, and parametric filter lines.
         """
-        device_target = device_name_override or profile.target_device or "PRO X SE Gaming Headset"
+        target = device_target if device_target is not None else device_name_override
+        if target is None:
+            target = profile.target_device or "PRO X SE Gaming Headset"
+
+        device_directive = self.format_device_directive(target, device_id=device_id)
+
+        # Header metadata description
+        if hasattr(target, "name") and hasattr(target, "id"):
+            display_target = f"{target.name} [{target.id}]"
+        elif device_id and isinstance(target, str):
+            display_target = f"{target} [{device_id}]"
+        else:
+            display_target = str(target).strip('"\'')
+
         lines = []
 
         # Header metadata
         lines.append("# ====================================================================")
         lines.append("# ASMR-DSP Generated Configuration")
         lines.append(f"# Profile: {profile.name} ({profile.category})")
-        lines.append(f"# Target Endpoint: {device_target}")
+        lines.append(f"# Target Endpoint: {display_target}")
         lines.append(f"# Headroom / Preamp: {profile.preamp_db:+.2f} dB")
         lines.append(f"# Updated: {profile.updated_at}")
         lines.append("# Note: In Equalizer APO, Device directives filter commands to matching endpoints.")
         lines.append("# ====================================================================")
         lines.append("")
 
-        # Device filter block - applies only to the specific audio endpoint
-        if device_target and device_target.lower() != "all devices":
-            lines.append(f'Device: "{device_target}"')
-        lines.append("")
+        # Device filter block - applies only to the specific audio endpoint without quotes
+        if device_directive:
+            lines.append(device_directive)
+            lines.append("")
 
         # Preamp line
         lines.append(f"Preamp: {profile.preamp_db:+.2f} dB")
@@ -154,12 +230,19 @@ class APOWriter:
         lines.append("")
         return "\n".join(lines)
 
-    def write_profile(self, profile: DSPProfile, device_name_override: Optional[str] = None) -> Tuple[bool, str]:
+    def write_profile(
+        self,
+        profile: DSPProfile,
+        device_target: Optional[Any] = None,
+        device_id: Optional[str] = None,
+        device_name_override: Optional[str] = None
+    ) -> Tuple[bool, str]:
         """
         Atomically write the profile to the Equalizer APO config file.
         Returns (success: bool, message: str).
         """
-        content = self.format_profile_to_apo_text(profile, device_name_override)
+        target = device_target if device_target is not None else device_name_override
+        content = self.format_profile_to_apo_text(profile, device_target=target, device_id=device_id)
         target_path = self.config_path
 
         try:
@@ -225,18 +308,25 @@ class APOWriter:
             dsp_status_text=status_text
         )
 
-    def generate_test_tone_config(self, device_name: str) -> Tuple[str, DSPProfile]:
+    def generate_test_tone_config(
+        self,
+        device_target: Optional[Any] = None,
+        device_id: Optional[str] = None,
+        device_name: Optional[str] = None
+    ) -> Tuple[str, DSPProfile]:
         """
         Generate a safe, low-level +4 dB 1 kHz test bump to verify that Equalizer APO
         is actively attached to the Windows endpoint without risking hearing or equipment.
         """
+        target = device_target if device_target is not None else device_name
+        target_name = getattr(target, "name", str(target or "PRO X SE Gaming Headset")).strip('"\'')
         test_profile = DSPProfile(
             name="Test EQ (Audible Check)",
-            target_device=device_name,
+            target_device=target_name,
             preamp_db=-4.0,  # Negative preamp ensures zero clipping during test
             filters=[
                 EQFilter(filter_type=FilterType.PEAK, frequency=1000.0, gain_db=4.0, q=2.0, comment="Safe test peak")
             ],
             notes="Temporary profile to verify Equalizer APO pipeline attachment."
         )
-        return self.format_profile_to_apo_text(test_profile), test_profile
+        return self.format_profile_to_apo_text(test_profile, device_target=target, device_id=device_id), test_profile
